@@ -1,49 +1,39 @@
-mtype = { req_crane, grant, release, wait }
+// dock_model.pml
+/* Simple Promela model: multiple ships using limited docks */
 
-chan ship1_to_port = [0] of { mtype }
-chan ship2_to_port = [0] of { mtype }
-chan port_to_ship1 = [0] of { mtype }
-chan port_to_ship2 = [0] of { mtype }
+int docks = 2;
 
-bool crane_busy = false
+proctype Ship(byte id) {
+    bool indock = false;
 
-proctype Ship(chan to_port; chan from_port; byte id) {
-    to_port ! req_crane;
-    from_port ? grant;
-    /* use crane */
-    to_port ! release;
-}
-
-proctype Port() {
-    mtype msg;
-    do
-    :: ship1_to_port ? msg ->
+    /* Try to acquire a dock */
+    atomic {
         if
-        :: (msg == req_crane && !crane_busy) ->
-            crane_busy = true;
-            port_to_ship1 ! grant;
-        :: (msg == req_crane && crane_busy) ->
-            port_to_ship1 ! wait;
-        :: (msg == release) ->
-            crane_busy = false;
+        :: (docks > 0) -> docks = docks - 1; indock = true;
+        :: else -> skip
         fi
-    :: ship2_to_port ? msg ->
-        if
-        :: (msg == req_crane && !crane_busy) ->
-            crane_busy = true;
-            port_to_ship2 ! grant;
-        :: (msg == req_crane && crane_busy) ->
-            port_to_ship2 ! wait;
-        :: (msg == release) ->
-            crane_busy = false;
-        fi
-    od
+    }
+
+    /* Only proceed if dock acquired */
+    if
+    :: (indock) ->
+        /* Simulate using the dock (abstract) */
+        /* loading/unloading operation */
+        
+        /* Release the dock */
+        atomic { docks = docks + 1; indock = false; }
+    :: else -> skip
+    fi
 }
 
 init {
-    atomic {
-        run Port();
-        run Ship(ship1_to_port, port_to_ship1, 1);
-        run Ship(ship2_to_port, port_to_ship2, 2);
-    }
+    /* Spawn multiple ships */
+    run Ship(0)
+    run Ship(1)
+    run Ship(2)
+    run Ship(3)
+    run Ship(4)
+
+    /* Safety check */
+    assert(docks >= 0 && docks <= 2)
 }
