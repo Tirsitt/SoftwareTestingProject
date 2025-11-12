@@ -1,0 +1,58 @@
+@startuml
+actor Ship1
+actor Ship2
+participant Port
+participant Dock1
+participant Dock2
+
+' --- Ship1 sequence ---
+Ship1 -> Port: requestDock()
+activate Port
+alt Dock1 available
+    Port -> Dock1: allocate()
+    activate Dock1
+    Dock1 --> Port: allocated
+    Port --> Ship1: dockGranted(Dock1)
+    deactivate Port
+    
+    Ship1 -> Dock1: useDock()
+    Note over Ship1, Dock1: Loading/unloading operation
+    
+    Ship1 -> Port: releaseDock()
+    activate Port
+    Port -> Dock1: release()
+    Dock1 --> Port: released
+    Port --> Ship1: dockReleased
+    deactivate Dock1
+    deactivate Port
+else All docks busy
+    Port --> Ship1: waitForDock()
+    Note over Ship1: Waiting for available dock
+end
+
+' --- Ship2 sequence ---
+Ship2 -> Port: requestDock()
+activate Port
+alt Dock2 available
+    Port -> Dock2: allocate()
+    activate Dock2
+    Dock2 --> Port: allocated
+    Port --> Ship2: dockGranted(Dock2)
+    deactivate Port
+    
+    Ship2 -> Dock2: useDock()
+    Note over Ship2, Dock2: Loading/unloading operation
+    
+    Ship2 -> Port: releaseDock()
+    activate Port
+    Port -> Dock2: release()
+    Dock2 --> Port: released
+    Port --> Ship2: dockReleased
+    deactivate Dock2
+    deactivate Port
+else All docks busy
+    Port --> Ship2: waitForDock()
+    Note over Ship2: Waiting for available dock
+end
+
+@enduml
